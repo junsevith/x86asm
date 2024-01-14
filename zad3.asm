@@ -82,10 +82,10 @@ display_float:
 
     xor eax, eax
     finit
-    fld DWORD [ebp+8]
-    fmul DWORD [tenpow]
+    fld DWORD [ebp+8]    ; ładuje argument ze stosu
+    fmul DWORD [tenpow]  ; mnoży argument przez 10^(prec-1)
     push 0
-    fist DWORD [esp]
+    fist DWORD [esp]     ; zapisuje wynik na stosie
     
     ; Convert number to string
     mov eax, [esp]  ; eax = argument 1
@@ -98,11 +98,11 @@ display_float:
     cmp eax, 0
     jge freconvert
     neg eax
-    mov esi,1
+    mov esi,1     ; jeśli argument < 0 ustawiamy flagę minusa
 
 freconvert:
     dec edi         ; dekrementuje edi (przechodzi do poprzedniego znaku)
-    cmp ebx,0
+    cmp ebx,0       ; sprawdza czy już pora na wstawienie przecinka
     dec ebx
     je set_dot
     
@@ -120,12 +120,12 @@ fadd_char:
     test eax, eax   ; sprawdza czy eax jest zerem
     jnz freconvert
     
-    cmp ebx, -1
+    cmp ebx, -1     ; sprawdza czy wstawiono przecinek i 1 liczbę po przecinku (aby zapis był poprawny)
     jg freconvert
     
-    cmp esi, 0
+    cmp esi, 0      ; sprawdza czy znaleziono minus
     je syscall
-    mov dl, 45
+    mov dl, 45      ; jeśli tak to ustawia następny znak na minus
     dec edi
     xor esi,esi
     jmp fadd_char
@@ -173,14 +173,14 @@ read_float:
 convert_loop:
     movzx edx, byte [esi]   ; powiększa wartość esi zerami i zapisuje go do edx
     cmp dl, 0x0A            ; sprawdza czy edx zawiera newline character (koniec stringa)
-    je convert_done                 ; jeśli tak to kończy
+    je convert_done         ; jeśli tak to kończy
     
-    cmp dl, 46
+    cmp dl, 46              ; sprawdza czy edx zawiera kropkę
     je fraction
-    cmp dl, 44
+    cmp dl, 44              ; sprawdza czy edx zawiera przecinek
     je fraction
     
-    cmp dl, 45
+    cmp dl, 45              ; sprawdza czy edx zawiera minus
     je minus
     
     imul eax, 10            ; jeśli nie to mnoży eax * 10
@@ -191,21 +191,21 @@ convert_loop:
 
 fraction:
     mov ebx, esi    ; zapisujemy miejsce przecinka
-    inc esi
+    inc esi         ; inkrementujemy esi (przechodzimy do kolejnego znaku)
     jmp convert_loop
     
 minus:
-    mov ecx, 1
-    inc esi
+    mov ecx, 1      ; ustawiamy flagę minusa
+    inc esi         ; inkrementujemy esi (przechodzimy do kolejnego znaku)
     jmp convert_loop
 
 convert_done:
-    cmp ebx, 0
+    cmp ebx, 0     ; sprawdza czy ebx jest zerem
     je wr_fin
 
 prepare_float:
-     sub ebx, esi
-     neg ebx
+     sub ebx, esi   ; obliczamy pozycję przecinka
+     neg ebx        ; negujemy ebx (bo poprzednia operacja zwróciła ujemny wynik)
      dec ebx
      jmp wr_fin
      
@@ -214,9 +214,9 @@ negate:
     xor ecx,ecx
 
 wr_fin:
-     cmp ecx, 1
-     je negate
-     push eax
+     cmp ecx, 1     ; sprawdza czy znaleziono minus
+     je negate      ; jeśli tak to neguje wynik
+     push eax       ; zapisujemy wynik do eax
      finit
      fild DWORD [esp]    ; ładujemy wejście pomijając przecinek
 
@@ -229,8 +229,8 @@ pow_ten:                ; dzielimy wejście przez 10^pozycja przecinka
     jmp pow_ten
 
 finfin:    
-    fst DWORD [esp]
-    mov eax, [esp]
+    fst DWORD [esp]     ; zapisujemy wynik na stosie
+    mov eax, [esp]      ; zapisujemy wynik do eax
 
     mov esp, ebp
     pop ebp
